@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comedor San Vicente - Sistema</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;color:#222}header{background:#0f766e;color:#fff;padding:16px;text-align:center}.wrap{padding:20px;max-width:1200px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}.card{background:#fff;border-radius:16px;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,.08)}h2{margin-top:0}input,select,button{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:10px}button{background:#0f766e;color:#fff;border:none;cursor:pointer}button:hover{opacity:.9}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}.kpi{font-size:28px;font-weight:bold}.small{font-size:12px;color:#666}</style>
+</head>
+<body>
+<header><h1>COMEDOR SAN VICENTE</h1><div>Sistema Automatizado de Compras, Ventas e Inventario</div></header>
+<div class='wrap'>
+<div class='grid'>
+<div class='card'><h2>Resumen</h2><div>Ventas del día</div><div class='kpi' id='ventasDia'>S/ 0</div><div>Compras del día</div><div class='kpi' id='comprasDia'>S/ 0</div><div>Ganancia estimada</div><div class='kpi' id='ganancia'>S/ 0</div></div>
+<div class='card'><h2>Registrar Venta</h2><input id='ventaProd' placeholder='Producto'><input id='ventaCant' type='number' placeholder='Cantidad'><input id='ventaPrecio' type='number' step='0.01' placeholder='Precio Unitario'><button onclick='registrarVenta()'>Guardar Venta</button></div>
+<div class='card'><h2>Registrar Compra</h2><input id='compraInsumo' placeholder='Insumo'><input id='compraCant' type='number' placeholder='Cantidad'><input id='compraCosto' type='number' step='0.01' placeholder='Costo Total'><button onclick='registrarCompra()'>Guardar Compra</button></div>
+</div>
+<div class='grid' style='margin-top:16px'>
+<div class='card'><h2>Inventario</h2><table><thead><tr><th>Item</th><th>Cantidad</th></tr></thead><tbody id='tablaInv'></tbody></table></div>
+<div class='card'><h2>Ventas Recientes</h2><table><thead><tr><th>Producto</th><th>Cant.</th><th>Total</th></tr></thead><tbody id='tablaVentas'></tbody></table></div>
+<div class='card'><h2>Compras Recientes</h2><table><thead><tr><th>Insumo</th><th>Cant.</th><th>Costo</th></tr></thead><tbody id='tablaCompras'></tbody></table></div>
+</div>
+</div>
+<script>
+const db = JSON.parse(localStorage.getItem('csv_db')||'{"ventas":[],"compras":[],"inv":{}}');
+function save(){localStorage.setItem('csv_db',JSON.stringify(db));render();}
+function hoy(){return new Date().toISOString().slice(0,10)}
+function registrarVenta(){const p=ventaProd.value,c=+ventaCant.value,pr=+ventaPrecio.value;if(!p||!c||!pr)return;db.ventas.unshift({p,c,total:c*pr,fecha:hoy()});db.inv[p]=(db.inv[p]||0)-c;save();ventaProd.value=ventaCant.value=ventaPrecio.value='';}
+function registrarCompra(){const i=compraInsumo.value,c=+compraCant.value,co=+compraCosto.value;if(!i||!c||!co)return;db.compras.unshift({i,c,costo:co,fecha:hoy()});db.inv[i]=(db.inv[i]||0)+c;save();compraInsumo.value=compraCant.value=compraCosto.value='';}
+function sumDia(arr,key){return arr.filter(x=>x.fecha===hoy()).reduce((a,b)=>a+b[key],0)}
+function render(){const vd=sumDia(db.ventas,'total'), cd=sumDia(db.compras,'costo');ventasDia.textContent='S/ '+vd.toFixed(2);comprasDia.textContent='S/ '+cd.toFixed(2);ganancia.textContent='S/ '+(vd-cd).toFixed(2);
+ tablaInv.innerHTML=Object.entries(db.inv).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+ tablaVentas.innerHTML=db.ventas.slice(0,8).map(x=>`<tr><td>${x.p}</td><td>${x.c}</td><td>S/ ${x.total.toFixed(2)}</td></tr>`).join('');
+ tablaCompras.innerHTML=db.compras.slice(0,8).map(x=>`<tr><td>${x.i}</td><td>${x.c}</td><td>S/ ${x.costo.toFixed(2)}</td></tr>`).join('');}
+render();
+</script>
+</body>
+</html>
